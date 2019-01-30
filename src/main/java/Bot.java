@@ -12,23 +12,30 @@ import java.util.List;
 public class Bot extends TelegramLongPollingBot
 {
 
-    public static void main(String[] args) {
+
+
+    public static void main(String[] args)
+    {
         ApiContextInitializer.init();
+
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
 
 
-try
-{
-    telegramBotsApi.registerBot(new Bot());
-}
+            try
+                 {
+                    telegramBotsApi.registerBot(new Bot());
+                        }
 
-catch (TelegramApiRequestException e)
-{
-    e.printStackTrace();
-}
+            catch (TelegramApiRequestException e)
+            {
+                    e.printStackTrace();
+            }
 
 
     }
+
+
+
 
     public void sendMsq(Message message, String text)
     {
@@ -37,8 +44,8 @@ catch (TelegramApiRequestException e)
         sendMessage.enableMarkdown(true);
 
         sendMessage.setChatId(message.getChatId().toString());//определяем на какой конкретный чат определяем ответ
-sendMessage.setReplyToMessageId(message.getMessageId());
-sendMessage.setText(text);
+            sendMessage.setReplyToMessageId(message.getMessageId());
+                sendMessage.setText(text);
 
 
 try
@@ -53,27 +60,37 @@ catch(TelegramApiException e)
     }
 
 
-    public void onUpdateReceived(Update update) {
-        Message message = update.getMessage();
-        if(message!=null && message.hasText()){
-            switch (message.getText())
-            {
+    public void onUpdateReceived(Update update)
+    {
 
-                case "/help":
-sendMsq(message, "Djjn");
-break;
-default:sendMsq(message, "Djjdsn");
+        // We check if the update has a message and the message has text
+        // We check if the update has a message and the message has text
+        if (update.hasMessage() && update.getMessage().hasText()) {
+            // Set variables
+            //String message_text = update.getMessage().getText();
+            String message_text="чекого сучара";
+            long chat_id = update.getMessage().getChatId();
+
+            SendMessage message = new SendMessage() // Create a message object object
+                    .setChatId(chat_id)
+                    .setText(message_text);
+            try {
+                execute(message); // Sending our message object to user
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
             }
-
         }
+    }
 //для приема сообщение и обновлений через лонг пул
-    }
 
 
 
-    public void onUpdatesReceived(List<Update> updates) {
 
-    }
+
+
+
+
+
 
     public String getBotUsername() {
         return "TestSTMBot";
@@ -84,4 +101,8 @@ default:sendMsq(message, "Djjdsn");
         return "703619267:AAHVoPUoSn4_DPm6VKUdjGCeccF6Hcsd_Qk";
         //вернуть токен
     }
+
+
+
+
 }
