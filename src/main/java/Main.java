@@ -1,5 +1,7 @@
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 public class Main
@@ -13,12 +15,17 @@ public class Main
         try
         {
             telegramBotsApi.registerBot(new Bot());
+
+
+
         }
 
         catch (TelegramApiRequestException e)
         {
             e.printStackTrace();
         }
+
+        System.out.println("Стааррртуем");
 
     }
 }
