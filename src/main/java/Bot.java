@@ -25,6 +25,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+import org.python.core.PyInstance;
+import org.python.util.PythonInterpreter;
+
 public class Bot extends TelegramLongPollingBot
 {
 
@@ -98,24 +101,25 @@ public class Bot extends TelegramLongPollingBot
         else if (update.hasMessage()&& update.getMessage().hasPhoto()) {
 
 
-            PhotoSize photo = getPhoto(update);
+             PhotoSize photo = getPhoto(update);
+
+            try
+            {
+                uploadFile("/",photo.getFileId());
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+
+
             System.out.println("прошло фото ");
 
 
-            String photoFilePath = null;
-            try {
-                photoFilePath = getFilePath(photo);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            System.out.println("прошел path");
-                                                                        java.io.File file = DownloadPhotoInDirectory(photoFilePath);
 
-            try {
-                saveImageinDIrectory(file);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+
+
+
 
         }
 
@@ -152,9 +156,10 @@ public PhotoSize getPhoto(Update update)
 
 
 
-// поиск или формирование file_path
 
-    public String getFilePath(PhotoSize photo) throws IOException {
+
+// поиск или формирование file_path
+public String getFilePath(PhotoSize photo) throws IOException {
        // Objects.requireNonNull(null); выдает ошибку - непонятно почему поэтому скрыто за комментариями
 
         if(photo.hasFilePath())
@@ -185,38 +190,8 @@ public PhotoSize getPhoto(Update update)
 
     }
 
-private java.io.File DownloadPhotoInDirectory(String filePath)
-            {
-                try
-                {
 
-                    System.out.println("download");
-
-
-
-
-                    return downloadFile(filePath);
-
-
-                }
-                catch(TelegramApiException e){e.printStackTrace();}
-
-
-            return null;
-
-            }
-
-
-public void saveImageinDIrectory(java.io.File file) throws IOException
-{
-
-    ImageIO.write(ImageIO.read(file),"png",file);
-
-
-}
-
-
-    public void uploadFile(String file_name, String file_id) throws IOException
+     public void uploadFile(String file_name, String file_id) throws IOException
     {
 
 
@@ -235,7 +210,11 @@ public void saveImageinDIrectory(java.io.File file) throws IOException
 
         URL download = new URL("https://api.telegram.org/file/bot" + getBotToken() + "/" + file_path);
 
-        FileOutputStream fos = new FileOutputStream(file_id + file_name);
+
+
+        String nameOfFile = (String.valueOf(1 + (int) (Math.random() * 1000)) + file_name );
+        
+        FileOutputStream fos = new FileOutputStream("/home/kiryushin/projects/BotSTMApi/src/main/resources/pictures/"+ nameOfFile);
 
 
         System.out.println("Start upload");
@@ -249,6 +228,17 @@ public void saveImageinDIrectory(java.io.File file) throws IOException
 
         System.out.println("Uploaded!");
     }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
