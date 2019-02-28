@@ -1,5 +1,7 @@
+
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
+
 import org.telegram.telegrambots.ApiContextInitializer;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
@@ -14,6 +16,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 
 import javax.imageio.ImageIO;
+import javax.validation.constraints.Null;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.*;
@@ -21,91 +24,123 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
-import org.python.core.PyInstance;
-import org.python.util.PythonInterpreter;
+import java.io.FileWriter;
+
 
 public class Bot extends TelegramLongPollingBot
 {
 
+    private  List<Integer> processingUsers = new ArrayList<>();
 
-/*
-    public static void main(String[] args)
-    {
-        ApiContextInitializer.init();
-
-        TelegramBotsApi telegramBotsApi = new TelegramBotsApi();
-
-
-            try
-                 {
-                    telegramBotsApi.registerBot(new Bot());
-                        }
-
-            catch (TelegramApiRequestException e)
-            {
-                    e.printStackTrace();
-            }
-
-
-    }
-*/
-
-
-
-    public void sendMsq(Message message, String text)
-    {
-
-        SendMessage sendMessage = new SendMessage();
-        sendMessage.enableMarkdown(true);
-
-        sendMessage.setChatId(message.getChatId().toString());//определяем на какой конкретный чат определяем ответ
-            sendMessage.setReplyToMessageId(message.getMessageId());
-                sendMessage.setText(text);
-
-
-                    try { execute(sendMessage); }
-
-                    catch(TelegramApiException e) { e.printStackTrace(); }
-
-
-
-    }
+    private Task Task=new Task();
 
 
     public void onUpdateReceived(Update update)
     {
 
-        // We check if the update has a message and the message has text
+        
 
-        if (update.hasMessage() && update.getMessage().hasText()) {
-            // Set variables
-            //String message_text = update.getMessage().getText();
-            String message_text="чекого сучара";
-            long chat_id = update.getMessage().getChatId();
 
-            SendMessage message = new SendMessage() // Create a message object object
-                    .setChatId(chat_id)
-                    .setText(message_text);
-            try {
-                execute(message); // Sending our message object to user
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
+        if(update.hasMessage() && update.getMessage().hasText()  )
+        {
+
+
+            switch(update.getMessage().getText())
+            {
+                case "/newtask":
+                    {
+
+
+
+                    sendTextMessageToUser("Введите название задачи", update);
+
+                    handleNewTaskCommand(update);
+
+
+                }
+                    break;
+
+
+
+
+                case "/send":
+                {
+
+                        if(Task.getTaskName()!=null&&Task.getTaskNote()!=null&&Task.getTaskPicture()!=null) {
+                            try {
+                                SendToTodoist(Task);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        else sendTextMessageToUser("Заполни все поля",update);
+
+
+                }
+                    break;
+
+                 default:{
+                     handleSimpleMessage(update);
+
+                     //sendTextMessageToUser("Нет такой комманды",update.getMessage().getChatId());
+                     }
             }
         }
 
-        //если в сообщении от пользователя содержится фото
-        else if (update.hasMessage()&& update.getMessage().hasPhoto()) {
+
+if(update.getMessage().hasPhoto()){handleSimpleMessage(update);}
 
 
-             PhotoSize photo = getPhoto(update);
+
+
+
+
+    }
+//для приема сообщение и обновлений через лонг пул
+
+    private void handleNewTaskCommand(Update update)
+    {
+        processingUsers.add(update.getMessage().getFrom().getId());
+    }
+
+
+
+
+    private void handleSimpleMessage(Update update)
+    {
+
+        Integer userId = update.getMessage().getFrom().getId();
+
+
+
+
+
+
+        if(processingUsers.contains(userId)  && Task.getTaskName() == null && update.getMessage().hasText())
+        {
+
+            Task.setTaskName(update.getMessage().getText());
+            System.out.println(Task.getTaskName());
+            sendTextMessageToUser("Введите дополнительные указания к задаче", update);
+
+
+        }
+
+        else if(processingUsers.contains(userId) && update.getMessage().hasText() && Task.getTaskNote()==null)  {  Task.setTaskNote(update.getMessage().getText());   sendTextMessageToUser("Добавьте фото к задаче",update);         }
+
+
+        if(processingUsers.contains(userId) && update.getMessage().hasPhoto()&& Task.getTaskPicture()==null)
+        {
+
+            System.out.println("Я вошел в тело отправки фото");
+            PhotoSize photo = getPhoto(update);
 
             try
             {
-                uploadFile("/",photo.getFileId());
+                //System.out.println(uploadPhoto(photo.getFileId()));
+                Task.setTaskPicture(uploadPhoto(photo.getFileId()));
             }
             catch (IOException e)
             {
@@ -113,19 +148,51 @@ public class Bot extends TelegramLongPollingBot
             }
 
 
-            System.out.println("прошло фото ");
 
-
-
-
-
-
-
+            testNewTask(update);
+            processingUsers.remove(userId);
         }
 
-    }
-//для приема сообщение и обновлений через лонг пул
 
+
+
+    }
+
+
+
+
+
+    private void testNewTask(Update update)
+    {
+        System.out.println("Название задачи:  " + Task.getTaskName());
+        System.out.println("Комментарий к задаче: " + Task.getTaskNote());
+        System.out.println("Фото называется: " + Task.getTaskPicture());
+
+
+    }
+
+
+
+
+
+
+
+public void sendTextMessageToUser(String message_text,Update update)
+{
+
+long chat_id = update.getMessage().getChatId();
+
+    SendMessage messageForUser = new SendMessage()
+            .setChatId(chat_id)
+            .setText(message_text);
+
+    try {
+        execute(messageForUser);
+    } catch (TelegramApiException e) {
+        e.printStackTrace();
+    }
+
+}
 
 
 
@@ -174,7 +241,7 @@ public String getFilePath(PhotoSize photo) throws IOException {
 
                     getFileMethod.setFileId(photo.getFileId());
 
-                    uploadFile("waxwax",photo.getFileId());
+                    uploadPhoto(photo.getFileId());
 
                     try {
                         File file = execute(getFileMethod);
@@ -191,7 +258,7 @@ public String getFilePath(PhotoSize photo) throws IOException {
     }
 
 
-     public void uploadFile(String file_name, String file_id) throws IOException
+     private String uploadPhoto( String file_id) throws IOException
     {
 
 
@@ -212,35 +279,58 @@ public String getFilePath(PhotoSize photo) throws IOException {
 
 
 
-        String nameOfFile = (String.valueOf(1 + (int) (Math.random() * 1000)) + file_name );
-        
-        FileOutputStream fos = new FileOutputStream("/home/kiryushin/projects/BotSTMApi/src/main/resources/pictures/"+ nameOfFile);
+        String nameOfFile = (String.valueOf(1 + (int) (Math.random() * 1000)) )+file_id  ;
+
+
+
+
+        FileOutputStream fos = new FileOutputStream("/home/kiryushin/projects/BotSTMApi/src/main/resources/pictures/" +nameOfFile + ".jpeg" );
 
 
         System.out.println("Start upload");
         ReadableByteChannel rbc = Channels.newChannel(download.openStream());
+
+
 
         fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
         fos.close();
         rbc.close();
 
      //   uploadFlag = 0;
-
         System.out.println("Uploaded!");
+        return  nameOfFile;
+
     }
 
 
 
 
+private void SendToTodoist(Task task) throws IOException
+{
+
+        String headline = task.getTaskName();
+        String note = task.getTaskNote();
+        String image = task.getTaskPicture();
+
+        FileWriter writer = new FileWriter("/home/kiryushin/projects/BotSTMApi/src/main/resources/text/test",false);
+        String text=headline + "|"+ note + "|" + image+"|";
+        writer.write(text);
+        writer.flush();
+startPythonSync();
 
 
+    }
 
 
+    private void startPythonSync() throws IOException
+    {
+        try {
+            String cmd = "python3.6 /home/kiryushin/projects/python/stm2/stm.py";
+            Process p = Runtime.getRuntime().exec(cmd);
+        }
+        catch (IOException e){e.printStackTrace();}
 
-
-
-
-
+    }
 
 
     public String getBotUsername() {
