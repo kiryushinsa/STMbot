@@ -7,10 +7,15 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
@@ -36,6 +41,18 @@ public class Bot extends TelegramLongPollingBot
 
     private Task Task=new Task();
 
+    private String changeTag;
+
+    public String getBotUsername() {
+        return "TestSTMBot";
+        //вернуть имя бота
+    }
+
+    public String getBotToken() {
+        return "703619267:AAHVoPUoSn4_DPm6VKUdjGCeccF6Hcsd_Qk";
+        //вернуть токен
+    }
+
 
     public void onUpdateReceived(Update update)
     {
@@ -47,11 +64,8 @@ public class Bot extends TelegramLongPollingBot
         {
 
 
-            switch(update.getMessage().getText())
-            {
-                case "/newtask":
-                    {
-
+            switch(update.getMessage().getText()) {
+                case "/newtask": {
 
 
                     sendTextMessageToUser("Введите название задачи", update);
@@ -60,26 +74,83 @@ public class Bot extends TelegramLongPollingBot
 
 
                 }
+                break;
+
+                case "/now":
+                {
+                    SendMessage message = new SendMessage() // Create a message object object
+                            .setChatId(update.getMessage().getChatId())
+                            .setText("Test");
+                    ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+                    // Create the keyboard (list of keyboard rows)
+                    List<KeyboardRow> keyboard = new ArrayList<>();
+                    // Create a keyboard row
+                    KeyboardRow row = new KeyboardRow();
+                    // Set each button, you can also use KeyboardButton objects if you need something else than text
+                    row.add("1. М");
+                    row.add("2. end");
+
+                    // Add the first row to the keyboard
+                    keyboard.add(row);
+                    // Create another keyboard row
+                    row = new KeyboardRow();
+                    row.add("3. К");
+                    row.add("4. Т");
+                    keyboard.add(row);
+                    // Set the keyboard to the markup
+                    keyboardMarkup.setKeyboard(keyboard);
+                    // Add it to the message
+
+                    message.setReplyMarkup(keyboardMarkup);
+                    try
+                    {
+                        execute(message); // Call method to send the photo
+                    }
+                    catch (TelegramApiException e)
+                    {
+                        e.printStackTrace();
+
+                    }
+                }
                     break;
 
+                case "/send": {
 
-
-
-                case "/send":
-                {
-
-                        if(Task.getTaskName()!=null&&Task.getTaskNote()!=null&&Task.getTaskPicture()!=null) {
-                            try {
-                                SendToTodoist(Task);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                    if (Task.getTaskName() != null && Task.getTaskNote() != null && Task.getTaskPicture() != null) {
+                        try {
+                            SendToTodoist(Task);
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                        else sendTextMessageToUser("Заполни все поля",update);
+                    } else sendTextMessageToUser("Заполни все поля", update);
 
 
                 }
-                    break;
+                break;
+
+                case "/changeName":
+                    {
+                        if(Task.readyTask()) {  }
+                        else{ sendTextMessageToUser("Заполните все поля",update);}
+                }
+                break;
+
+
+
+                case "/changeNote":
+                {
+                    if(Task.readyTask()){}
+                    else {sendTextMessageToUser("Заполните все поля",update);}
+                }
+                break;
+
+                case "/changepicture":
+                {
+                    if(Task.readyTask()){ }
+                    else {sendTextMessageToUser("Заполните все поля",update);}
+                }
+                break;
+
 
                  default:{
                      handleSimpleMessage(update);
@@ -99,6 +170,33 @@ if(update.getMessage().hasPhoto()){handleSimpleMessage(update);}
 
     }
 //для приема сообщение и обновлений через лонг пул
+
+
+
+
+    private void keyboard( Update update)
+    {
+
+
+
+        SendMessage message = new SendMessage() // Create a message object object
+                .setChatId(update.getMessage().getChatId())
+                .setText("You send /start");
+        InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        List<InlineKeyboardButton> rowInline = new ArrayList<>();
+        rowInline.add(new InlineKeyboardButton().setText("Update message text").setCallbackData("update_msg_text"));
+        // Set the keyboard to the markup
+        rowsInline.add(rowInline);
+        // Add it to the message
+        markupInline.setKeyboard(rowsInline);
+        message.setReplyMarkup(markupInline);
+
+    }
+
+    private void handleNewChangeCommand(){}
+
+    private void handleNewChangeMessage(){}
 
     private void handleNewTaskCommand(Update update)
     {
@@ -150,7 +248,13 @@ if(update.getMessage().hasPhoto()){handleSimpleMessage(update);}
 
 
             testNewTask(update);
+            sendFullTask(update,photo.getFileId(),Task);
+
+ sendTextMessageToUser("Для отправки задачи в проект ToDoIst напишите"+"'/send'",update);
+
+
             processingUsers.remove(userId);
+
         }
 
 
@@ -159,10 +263,27 @@ if(update.getMessage().hasPhoto()){handleSimpleMessage(update);}
     }
 
 
+private void sendFullTask(Update update,String file_id,Task Task1)
+{
+
+    String caption="Название задачи:" + Task1.getTaskName() + ". " + "Комментарий к задаче:" + Task1.getTaskNote();
+
+    SendPhoto sendPhoto = new SendPhoto()
+            .setChatId(update.getMessage().getChatId())
+            .setPhoto(file_id)
+            .setCaption(caption);
 
 
+    try {
+        execute(sendPhoto);
+    } catch (TelegramApiException e) {
+        e.printStackTrace();
+    }
 
-    private void testNewTask(Update update)
+}
+
+
+private void testNewTask(Update update)
     {
         System.out.println("Название задачи:  " + Task.getTaskName());
         System.out.println("Комментарий к задаче: " + Task.getTaskNote());
@@ -177,7 +298,7 @@ if(update.getMessage().hasPhoto()){handleSimpleMessage(update);}
 
 
 
-public void sendTextMessageToUser(String message_text,Update update)
+private void sendTextMessageToUser(String message_text,Update update)
 {
 
 long chat_id = update.getMessage().getChatId();
@@ -197,7 +318,7 @@ long chat_id = update.getMessage().getChatId();
 
 
 
-public PhotoSize getPhoto(Update update)
+private PhotoSize getPhoto(Update update)
 {// выбрали самую большую фотографию из списка
 
     if (update.hasMessage()&& update.getMessage().hasPhoto()) {
@@ -225,8 +346,8 @@ public PhotoSize getPhoto(Update update)
 
 
 
-// поиск или формирование file_path
-public String getFilePath(PhotoSize photo) throws IOException {
+
+private String getFilePath(PhotoSize photo) throws IOException {
        // Objects.requireNonNull(null); выдает ошибку - непонятно почему поэтому скрыто за комментариями
 
         if(photo.hasFilePath())
@@ -258,7 +379,7 @@ public String getFilePath(PhotoSize photo) throws IOException {
     }
 
 
-     private String uploadPhoto( String file_id) throws IOException
+private String uploadPhoto( String file_id) throws IOException
     {
 
 
@@ -321,11 +442,10 @@ startPythonSync();
 
     }
 
-
     private void startPythonSync() throws IOException
     {
         try {
-            String cmd = "python3.6 /home/kiryushin/projects/python/stm2/stm.py";
+            String cmd = "python3.6 /home/kiryushin/projects/BotSTMApi/src/main/python/stm.py";
             Process p = Runtime.getRuntime().exec(cmd);
         }
         catch (IOException e){e.printStackTrace();}
@@ -333,15 +453,6 @@ startPythonSync();
     }
 
 
-    public String getBotUsername() {
-        return "TestSTMBot";
-        //вернуть имя бота
-    }
-
-    public String getBotToken() {
-        return "703619267:AAHVoPUoSn4_DPm6VKUdjGCeccF6Hcsd_Qk";
-        //вернуть токен
-    }
 
 
 

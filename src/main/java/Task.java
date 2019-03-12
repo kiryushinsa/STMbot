@@ -36,5 +36,11 @@ public class Task
         TaskPicture = taskPicture;
     }
 
+    public boolean readyTask()
+    {
 
+        if(getTaskName()!=null&&getTaskPicture()!=null&& getTaskNote()!=null) {   return true;      }
+        else {  return false; }
+
+    }
 }
