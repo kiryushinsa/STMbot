@@ -2,7 +2,7 @@
 from todoist.api import TodoistAPI
 import json
 
-api = TodoistAPI('4b6a0663cdf468b62a69c852b72f851782147daf')
+api = TodoistAPI('')
 api.sync()
 print(api.state['projects'])
 

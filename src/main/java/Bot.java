@@ -8,6 +8,7 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.File;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.PhotoSize;
@@ -33,10 +34,13 @@ import java.util.*;
 
 import java.io.FileWriter;
 
+import static java.lang.Math.toIntExact;
+
 
 public class Bot extends TelegramLongPollingBot
 {
 
+     Logs Log= new Logs();
     private  List<Integer> processingUsers = new ArrayList<>();
 
     private Task Task=new Task();
@@ -44,13 +48,13 @@ public class Bot extends TelegramLongPollingBot
     private String changeTag;
 
     public String getBotUsername() {
-        return "TestSTMBot";
-        //вернуть имя бота
+        return Log.NAME_BOT;
+
     }
 
     public String getBotToken() {
-        return "703619267:AAHVoPUoSn4_DPm6VKUdjGCeccF6Hcsd_Qk";
-        //вернуть токен
+        return Log.TOKEN;
+
     }
 
 
@@ -76,41 +80,28 @@ public class Bot extends TelegramLongPollingBot
                 }
                 break;
 
-                case "/now":
+                case "/show":
                 {
-                    SendMessage message = new SendMessage() // Create a message object object
+                    InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+                    List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+                    List<InlineKeyboardButton> rowInline = new ArrayList<>();
+
+                    rowInline.add(new InlineKeyboardButton().setText("Нажмите, чтобы послать сообщение").setCallbackData("/send"));
+                    rowsInline.add(rowInline);
+
+                    markupInline.setKeyboard(rowsInline);
+                    SendMessage message = new SendMessage()
+                            .setReplyMarkup(markupInline)
                             .setChatId(update.getMessage().getChatId())
-                            .setText("Test");
-                    ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
-                    // Create the keyboard (list of keyboard rows)
-                    List<KeyboardRow> keyboard = new ArrayList<>();
-                    // Create a keyboard row
-                    KeyboardRow row = new KeyboardRow();
-                    // Set each button, you can also use KeyboardButton objects if you need something else than text
-                    row.add("1. М");
-                    row.add("2. end");
+                            .setText("ВОть");
 
-                    // Add the first row to the keyboard
-                    keyboard.add(row);
-                    // Create another keyboard row
-                    row = new KeyboardRow();
-                    row.add("3. К");
-                    row.add("4. Т");
-                    keyboard.add(row);
-                    // Set the keyboard to the markup
-                    keyboardMarkup.setKeyboard(keyboard);
-                    // Add it to the message
-
-                    message.setReplyMarkup(keyboardMarkup);
-                    try
-                    {
-                        execute(message); // Call method to send the photo
-                    }
-                    catch (TelegramApiException e)
-                    {
+                    try {
+                        execute(message);
+                    } catch (TelegramApiException e) {
                         e.printStackTrace();
-
                     }
+
+
                 }
                     break;
 
@@ -159,9 +150,27 @@ public class Bot extends TelegramLongPollingBot
                      }
             }
         }
+        else if(update.hasCallbackQuery())
+        {
+            String call_data = update.getCallbackQuery().getData();
+            long message_id = update.getCallbackQuery().getMessage().getMessageId();
+            long chat_id = update.getCallbackQuery().getMessage().getChatId();
 
+            String answer = "Updated message text";
+            EditMessageText new_message = new EditMessageText()
+                    .setChatId(chat_id)
+                    .setMessageId(toIntExact(message_id))
+                    .setText(answer);
+            try {
+                execute(new_message);
+            } catch (TelegramApiException e) {
+                e.printStackTrace();
+            }
 
-if(update.getMessage().hasPhoto()){handleSimpleMessage(update);}
+            System.out.println("dasdad");
+        }
+
+else if(update.getMessage().hasPhoto()){handleSimpleMessage(update);}
 
 
 
@@ -174,29 +183,8 @@ if(update.getMessage().hasPhoto()){handleSimpleMessage(update);}
 
 
 
-    private void keyboard( Update update)
-    {
 
 
-
-        SendMessage message = new SendMessage() // Create a message object object
-                .setChatId(update.getMessage().getChatId())
-                .setText("You send /start");
-        InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-        List<InlineKeyboardButton> rowInline = new ArrayList<>();
-        rowInline.add(new InlineKeyboardButton().setText("Update message text").setCallbackData("update_msg_text"));
-        // Set the keyboard to the markup
-        rowsInline.add(rowInline);
-        // Add it to the message
-        markupInline.setKeyboard(rowsInline);
-        message.setReplyMarkup(markupInline);
-
-    }
-
-    private void handleNewChangeCommand(){}
-
-    private void handleNewChangeMessage(){}
 
     private void handleNewTaskCommand(Update update)
     {
